@@ -214,7 +214,7 @@ def main():
             model = createModel()
             filesPath=getFilesPathWithoutSeizure(i, indexPat)
             
-            model.fit_generator(generate_arrays_for_training(indexPat, filesPath, end=75), #end=75),#It take the first 75%
+            history = model.fit_generator(generate_arrays_for_training(indexPat, filesPath, end=75), #end=75),#It take the first 75%
                                 validation_data=generate_arrays_for_training(indexPat, filesPath, start=75),#start=75), #It take the last 25%
                                 #steps_per_epoch=10000, epochs=10)
                                 steps_per_epoch=int((len(filesPath)-int(len(filesPath)/100*25))),#*25), 
@@ -223,6 +223,10 @@ def main():
                                 epochs=300, max_queue_size=2, shuffle=True, callbacks=[earlystop,weights_callback])# 100 epochs è meglio #aggiungere criterio di stop in base accuratezza
             print('Training end')
             
+            # Save model history
+            with open(f'{finalWeightsOutputPath}_hist.pkl','w') as h:
+                h.write(history.history)
+
             print('Testing start')
             filesPath=interictalSpectograms[i]
             interPrediction=model.predict_generator(generate_arrays_for_predict(indexPat, filesPath), max_queue_size=4, steps=len(filesPath))
