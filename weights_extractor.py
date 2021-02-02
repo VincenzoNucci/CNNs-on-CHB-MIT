@@ -37,7 +37,7 @@ class SaveCompressedWeightsNetwork(tf.keras.callbacks.Callback):
     if epoch == 0: # Put weight initialization as first element in weights layer
       for n in range(len(self.model.layers)):
         self.weights_layer[n].insert(0,self.initial[n])
-    save_fname = str.zfill(epoch+1,len(str(self.epochs))+1)
+    save_fname = str.zfill(str(epoch+1),len(str(self.epochs))+1)
     
     pickle.dump(self.weights_layer,open(f'{os.path.join(self.output_dir,save_fname)}.pkl','wb'))
     # Reset arrays for layers' weight for next epoch
