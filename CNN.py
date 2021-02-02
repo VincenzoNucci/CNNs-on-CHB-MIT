@@ -224,7 +224,7 @@ def main():
             print('Training end')
             
             # Save model history
-            with open(f'{finalWeightsOutputPath}_hist.pkl','w') as h:
+            with open(f'{finalWeightsOutputPath}_hist.pkl','wb') as h:
                 h.write(history.history)
 
             print('Testing start')
