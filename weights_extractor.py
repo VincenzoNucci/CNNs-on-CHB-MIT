@@ -17,19 +17,19 @@ class SaveCompressedWeightsNetwork(tf.keras.callbacks.Callback):
     self.output_dir = output_dir
   def on_train_begin(self, batch, logs=None):
     self.epochs = self.params.get('epochs')
-    self.initial = {n:[] for n in range(len(self.model.layers))}
+    self.initial = {n:1 for n in range(len(self.model.layers))}
     self.weights_layer = {n:[] for n in range(len(self.model.layers))}
     # Saves weight initialization
     for n in range(len(self.model.layers)):
       # Exclude layers which does not have weights (Dropout, Flatten, MaxPool...)
-      if len(self.model.layers[n].get_weights()) > 0:
-        self.initial[n].append(self.model.layers[n].get_weights()[0])
+      if self.model.layers[n].name in ['conv','dense']:
+        self.initial[n] *= self.model.layers[n].get_weights()[0]
     # pickle.dump(self.initial,open(f'initial.pkl','wb'))
 
   def on_train_batch_end(self, batch, logs=None):
     # Saves all layers' weights at the end of each batch
     for n in range(len(self.model.layers)):
-      if len(self.model.layers[n].get_weights()) > 0:
+      if self.model.layers[n].name in ['conv','dense']:
         self.weights_layer[n].append(self.model.layers[n].get_weights()[0])
   
   def on_epoch_end(self, epoch, logs=None):
