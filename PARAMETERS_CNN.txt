@@ -1,3 +1,4 @@
 PathSpectogramFolder:*************/dataset/spectograms
+WeightsOutputPath:**************/results/weights
 OutputPath: *********/dataset/results.txt
 OutputPathModels: *************/dataset/

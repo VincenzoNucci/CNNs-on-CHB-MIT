@@ -8,8 +8,8 @@ import os
 
 # DATASET: https://physionet.org/pn6/chbmit/
 sampleRate = 256
-pathDataSet = ''# path of the dataset
-FirstPartPathOutput='' #path where the spectogram will be saved
+pathDataSet=''
+FirstPartPathOutput=''
 #patients = ["01", "02", "03", "05", "09", "10", "13", "14", "18", "19", "20", "21", "23"]
 #nSeizure = [7, 3, 6, 5, 4, 6, 5, 5, 6, 3, 5, 4, 5]
 patients = ["01", "02", "05", "19", "21", "23"]
@@ -306,6 +306,7 @@ def createArrayIntervalData(fSummary):
 
 
 def main():
+    global pathDataSet
     global SecondPartPathOutput
     global FirstPartPathOutput
     global legendOfOutput

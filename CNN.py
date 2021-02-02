@@ -11,6 +11,8 @@ import numpy as np
 from keras.models import Sequential
 from keras.layers import  Dense, Conv3D, Dropout, Flatten, BatchNormalization 
 from keras.callbacks import EarlyStopping
+from weights_extractor import SaveCompressedWeightsNetwork
+from custom_model import createModel
 from random import shuffle
 import math
 #to plot the model
@@ -21,6 +23,7 @@ import math
 
 PathSpectogramFolder=''
 OutputPath=''
+WeightsOutputPath=''
 OutputPathModels=''
 interictalSpectograms=[]
 preictalSpectograms=[]  #This array contains syntetic data, it's created to have a balance dataset and it's used for training
@@ -31,6 +34,7 @@ nSeizure=0
 def loadParametersFromFile(filePath):
     global PathSpectogramFolder
     global OutputPath
+    global WeightsOutputPath
     global OutputPathModels
     if(os.path.isfile(filePath)):
         with open(filePath, "r") as f:
@@ -122,35 +126,7 @@ def loadSpectogramData(indexPat):
         line=f.readline()
     f.close()
 
-
-def createModel():
-    input_shape=(1, 22, 59, 114)
-    model = Sequential()
-    #C1
-    model.add(Conv3D(16, (22, 5, 5), strides=(1, 2, 2), padding='valid',activation='relu',data_format= "channels_first", input_shape=input_shape))
-    model.add(keras.layers.MaxPooling3D(pool_size=(1, 2, 2),data_format= "channels_first",  padding='same'))
-    model.add(BatchNormalization())
-    
-    #C2
-    model.add(Conv3D(32, (1, 3, 3), strides=(1, 1,1), padding='valid',data_format= "channels_first",  activation='relu'))#incertezza se togliere padding
-    model.add(keras.layers.MaxPooling3D(pool_size=(1,2, 2),data_format= "channels_first", ))
-    model.add(BatchNormalization())
-    
-    #C3
-    model.add(Conv3D(64, (1,3, 3), strides=(1, 1,1), padding='valid',data_format= "channels_first",  activation='relu'))#incertezza se togliere padding
-    model.add(keras.layers.MaxPooling3D(pool_size=(1,2, 2),data_format= "channels_first", ))
-    model.add(BatchNormalization())
-    
-    model.add(Flatten())
-    model.add(Dropout(0.5))
-    model.add(Dense(256, activation='sigmoid'))
-    model.add(Dropout(0.5))
-    model.add(Dense(2, activation='softmax'))
-    
-    opt_adam = keras.optimizers.Adam(lr=0.00001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
-    model.compile(loss='categorical_crossentropy', optimizer=opt_adam, metrics=['accuracy'])
-    
-    return model
+# createModel() imported from custom_model.py
 
 def getFilesPathWithoutSeizure(indexSeizure, indexPat):
     filesPath=[]
@@ -215,7 +191,7 @@ def main():
         os.makedirs(OutputPathModels)
     loadParametersFromFile("PARAMETERS_CNN.txt")
     #callback=EarlyStopping(monitor='val_acc', min_delta=0, patience=0, verbose=0, mode='auto', baseline=None)
-    callback=EarlyStoppingByLossVal(monitor='val_acc', value=0.975, verbose=1, lower=False)
+    earlystop=EarlyStoppingByLossVal(monitor='val_accuracy', value=0.975, verbose=1, lower=False)
     print("Parameters loaded")
     
     for indexPat in range(0, len(patients)):
@@ -230,6 +206,10 @@ def main():
         for i in range(0, nSeizure):
             print('SEIZURE OUT: '+str(i+1))
             
+            # Define output dir for weights based on patient and seizure
+            finalWeightsOutputPath=WeightsOutputPath+f'/paz{indexPat+1}/seizure{i+1}'
+            weights_callback = SaveCompressedWeightsNetwork(finalWeightsOutputPath)
+
             print('Training start')  
             model = createModel()
             filesPath=getFilesPathWithoutSeizure(i, indexPat)
@@ -240,7 +220,7 @@ def main():
                                 steps_per_epoch=int((len(filesPath)-int(len(filesPath)/100*25))),#*25), 
                                 validation_steps=int((len(filesPath)-int(len(filesPath)/100*75))),#*75),
                                 verbose=2,
-                                epochs=300, max_queue_size=2, shuffle=True, callbacks=[callback])# 100 epochs è meglio #aggiungere criterio di stop in base accuratezza
+                                epochs=300, max_queue_size=2, shuffle=True, callbacks=[earlystop,weights_callback])# 100 epochs è meglio #aggiungere criterio di stop in base accuratezza
             print('Training end')
             
             print('Testing start')
