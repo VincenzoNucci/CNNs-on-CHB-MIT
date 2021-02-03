@@ -13,10 +13,11 @@ class SaveCompressedWeightsNetwork(tf.keras.callbacks.Callback):
     	os.makedirs(output_dir)
     else:
     	if os.listdir(output_dir): # Directory exists and is not empty -> output warning and continue
-    	    print('Output directory already exists and is not empty, existing files will be removed.')
+          print('Output directory already exists and is not empty, existing files will be removed.')
           for f in os.listdir(output_dir):
             if f.endswith('.pkl'):
               os.remove(os.path.join(output_dir,f))
+        
     self.output_dir = output_dir
   def on_train_begin(self, batch, logs=None):
     self.epochs = self.params.get('epochs')
