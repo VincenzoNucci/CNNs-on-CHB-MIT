@@ -14,6 +14,7 @@ from keras.callbacks import EarlyStopping
 from weights_extractor import SaveCompressedWeightsNetwork
 from custom_model import createModel
 from random import shuffle
+import pickle
 import math
 #to plot the model
 #from keras.utils.vis_utils import plot_model
@@ -219,13 +220,13 @@ def main():
                                 #steps_per_epoch=10000, epochs=10)
                                 steps_per_epoch=int((len(filesPath)-int(len(filesPath)/100*25))),#*25), 
                                 validation_steps=int((len(filesPath)-int(len(filesPath)/100*75))),#*75),
-                                verbose=2,
+                                verbose=1, #progress bar
                                 epochs=300, max_queue_size=2, shuffle=True, callbacks=[earlystop,weights_callback])# 100 epochs è meglio #aggiungere criterio di stop in base accuratezza
             print('Training end')
             
             # Save model history
             with open(f'{finalWeightsOutputPath}_hist.pkl','wb') as h:
-                h.write(history.history)
+                pickle.dump(history.history,h)
 
             print('Testing start')
             filesPath=interictalSpectograms[i]
