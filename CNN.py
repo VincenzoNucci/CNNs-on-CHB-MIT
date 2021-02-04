@@ -7,7 +7,7 @@ import os
 #FINE codice per allenare la rete sulla cpu
 
 import keras
-from keras_buoy import ResumableModel
+from keras_buoy.models import ResumableModel
 import numpy as np
 from keras.models import Sequential, load_model
 from keras.layers import  Dense, Conv3D, Dropout, Flatten, BatchNormalization 
