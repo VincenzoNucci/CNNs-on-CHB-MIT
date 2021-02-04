@@ -1,24 +1,24 @@
 from tensorflow import keras
-import keras.layers
-from keras.models import Sequential
-from keras.layers import Conv3D, BatchNormalization, Flatten, Dropout, Dense
+import tensorflow.keras.layers as layers
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv3D, BatchNormalization, Flatten, Dropout, Dense
 
 def createModel():
     input_shape=(1, 22, 59, 114)
     model = Sequential()
     #C1
     model.add(Conv3D(16, (22, 5, 5), strides=(1, 2, 2), padding='valid',activation='relu',data_format= "channels_first", input_shape=input_shape))
-    model.add(keras.layers.MaxPooling3D(pool_size=(1, 2, 2),data_format= "channels_first",  padding='same'))
+    model.add(layers.MaxPooling3D(pool_size=(1, 2, 2),data_format= "channels_first",  padding='same'))
     model.add(BatchNormalization())
     
     #C2
     model.add(Conv3D(32, (1, 3, 3), strides=(1, 1,1), padding='valid',data_format= "channels_first",  activation='relu'))#incertezza se togliere padding
-    model.add(keras.layers.MaxPooling3D(pool_size=(1,2, 2),data_format= "channels_first", ))
+    model.add(layers.MaxPooling3D(pool_size=(1,2, 2),data_format= "channels_first", ))
     model.add(BatchNormalization())
     
     #C3
     model.add(Conv3D(64, (1,3, 3), strides=(1, 1,1), padding='valid',data_format= "channels_first",  activation='relu'))#incertezza se togliere padding
-    model.add(keras.layers.MaxPooling3D(pool_size=(1,2, 2),data_format= "channels_first", ))
+    model.add(layers.MaxPooling3D(pool_size=(1,2, 2),data_format= "channels_first", ))
     model.add(BatchNormalization())
     
     model.add(Flatten())
