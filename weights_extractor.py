@@ -7,16 +7,17 @@ import shutil
 # This class helps in saving the weights of a Dense/Convolutional layer for each batch iteration during training
 # For Dense layer, saves only the weights and ignore the bias
 class SaveCompressedWeightsNetwork(tf.keras.callbacks.Callback):
-  def __init__(self, output_dir):
+  def __init__(self, output_dir, resume=True):
     super(tf.keras.callbacks.Callback).__init__()
     if not os.path.exists(output_dir): # Directory does not exists -> create the directory path
     	os.makedirs(output_dir)
     else:
-    	if os.listdir(output_dir): # Directory exists and is not empty -> output warning and continue
-          print('Output directory already exists and is not empty, existing files will be removed.')
-          for f in os.listdir(output_dir):
-            if f.endswith('.pkl'):
-              os.remove(os.path.join(output_dir,f))
+      if not resume:
+        if os.listdir(output_dir): # Directory exists and is not empty -> output warning and continue
+            print('You said to not continue, restarting... existing files will be removed.')
+            for f in os.listdir(output_dir):
+              if f.endswith('.pkl'):
+                os.remove(os.path.join(output_dir,f))
         
     self.output_dir = output_dir
   def on_train_begin(self, batch, logs=None):
