@@ -159,7 +159,7 @@ def generate_arrays_for_training(indexPat, paths, start=0, end=100):
                 y = np.repeat([[0,1]],x.shape[0], axis=0)
             else:
                 y =np.repeat([[1,0]],x.shape[0], axis=0)
-            yield(x.transpose(1,2,3,0),y)
+            yield(x.transpose(0,2,3,4,1),y)
             
 def generate_arrays_for_predict(indexPat, paths, start=0, end=100):
     while True:
@@ -170,7 +170,7 @@ def generate_arrays_for_predict(indexPat, paths, start=0, end=100):
             x = np.load(PathSpectogramFolder+f)
             x=np.array([x])
             x=x.swapaxes(0,1)
-            yield(x.transpose(1,2,3,0))
+            yield(x.transpose(0,2,3,4,1))
 
 class EarlyStoppingByLossVal(keras.callbacks.Callback):
     def __init__(self, monitor='val_loss', value=0.00001, verbose=0, lower=True):
@@ -209,7 +209,7 @@ def main():
     # modelcheckpoint = ModelCheckpoint(f'{OutputPathModels}/checkpoints/checkpoint_.h5',monitor='val_accuracy',verbose=1,save_best_only=False,save_weights_only=False)
     print("Parameters loaded")
     
-    if os.path.exists(f'{OutputPathModels}/resume_indices.txt'):
+    if args.resume and os.path.exists(f'{OutputPathModels}/resume_indices.txt'):
         with open(f'{OutputPathModels}/resume_indices.txt','r') as resf:
             resind = resf.readline()
             indPat = int(resind.split('.')[0])
@@ -257,7 +257,7 @@ def main():
                                 #steps_per_epoch=10000, epochs=10)
                                 steps_per_epoch=int((len(filesPath)-int(len(filesPath)/100*25))),#*25), 
                                 validation_steps=int((len(filesPath)-int(len(filesPath)/100*75))),#*75),
-                                verbose=2, #no progress bar -> faster
+                                verbose=1, #progress bar
                                 epochs=300, max_queue_size=2, shuffle=True, callbacks=[earlystop,weights_callback])# 100 epochs è meglio #aggiungere criterio di stop in base accuratezza
             print('Training end')
 
