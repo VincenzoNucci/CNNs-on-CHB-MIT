@@ -3,7 +3,7 @@
 #INIZIO codice per allenare la rete sulla cpu
 import os
 #os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"   # see issue #152
-#os.environ["CUDA_VISIBLE_DEVICES"] = ""
+#os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 #FINE codice per allenare la rete sulla cpu
 
 from tensorflow import keras
@@ -159,7 +159,7 @@ def generate_arrays_for_training(indexPat, paths, start=0, end=100):
                 y = np.repeat([[0,1]],x.shape[0], axis=0)
             else:
                 y =np.repeat([[1,0]],x.shape[0], axis=0)
-            yield(x,y)
+            yield(x.transpose(1,2,3,0),y)
             
 def generate_arrays_for_predict(indexPat, paths, start=0, end=100):
     while True:
@@ -170,7 +170,7 @@ def generate_arrays_for_predict(indexPat, paths, start=0, end=100):
             x = np.load(PathSpectogramFolder+f)
             x=np.array([x])
             x=x.swapaxes(0,1)
-            yield(x)
+            yield(x.transpose(1,2,3,0))
 
 class EarlyStoppingByLossVal(keras.callbacks.Callback):
     def __init__(self, monitor='val_loss', value=0.00001, verbose=0, lower=True):
