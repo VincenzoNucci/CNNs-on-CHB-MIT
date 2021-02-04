@@ -7,10 +7,11 @@ import os
 #FINE codice per allenare la rete sulla cpu
 
 import keras
+from keras_buoy import ResumableModel
 import numpy as np
-from keras.models import Sequential
+from keras.models import Sequential, load_model
 from keras.layers import  Dense, Conv3D, Dropout, Flatten, BatchNormalization 
-from keras.callbacks import EarlyStopping
+from keras.callbacks import EarlyStopping, ModelCheckpoint
 from weights_extractor import SaveCompressedWeightsNetwork
 from custom_model import createModel
 from random import shuffle
@@ -193,12 +194,23 @@ def main():
     loadParametersFromFile("PARAMETERS_CNN.txt")
     #callback=EarlyStopping(monitor='val_acc', min_delta=0, patience=0, verbose=0, mode='auto', baseline=None)
     earlystop=EarlyStoppingByLossVal(monitor='val_accuracy', value=0.975, verbose=1, lower=False)
+    
+    if not os.path.exists(OutputPathModels+'/checkpoints'): # create checkpoints dir if it does not exist
+        os.makedirs(OutputPathModels+'/checkpoints')
+    
+    # create the model and make it resumable
+    model = createModel()
+    resumable_model = ResumableModel(model,save_every_epochs=1,to_path=f'{OutputPathModels}/checkpoints/model_checkpoint_.h5')
+        
+    # no need for modelcheckpoint callback
+    # modelcheckpoint = ModelCheckpoint(f'{OutputPathModels}/checkpoints/checkpoint_.h5',monitor='val_accuracy',verbose=1,save_best_only=False,save_weights_only=False)
     print("Parameters loaded")
     
     for indexPat in range(0, len(patients)):
         print('Patient '+patients[indexPat])
         if not os.path.exists(OutputPathModels+"ModelPat"+patients[indexPat]+"/"):
             os.makedirs(OutputPathModels+"ModelPat"+patients[indexPat]+"/")
+        
         loadSpectogramData(indexPat) 
         print('Spectograms data loaded')
         
@@ -212,10 +224,9 @@ def main():
             weights_callback = SaveCompressedWeightsNetwork(finalWeightsOutputPath)
 
             print('Training start')  
-            model = createModel()
             filesPath=getFilesPathWithoutSeizure(i, indexPat)
             
-            history = model.fit_generator(generate_arrays_for_training(indexPat, filesPath, end=75), #end=75),#It take the first 75%
+            history = resumable_model.fit_generator(generate_arrays_for_training(indexPat, filesPath, end=75), #end=75),#It take the first 75%
                                 validation_data=generate_arrays_for_training(indexPat, filesPath, start=75),#start=75), #It take the last 25%
                                 #steps_per_epoch=10000, epochs=10)
                                 steps_per_epoch=int((len(filesPath)-int(len(filesPath)/100*25))),#*25), 
