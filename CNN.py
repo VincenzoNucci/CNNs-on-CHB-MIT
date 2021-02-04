@@ -6,27 +6,33 @@ import os
 #os.environ["CUDA_VISIBLE_DEVICES"] = ""
 #FINE codice per allenare la rete sulla cpu
 
-import keras
+from tensorflow import keras
 from keras_buoy.models import ResumableModel
 import numpy as np
-from keras.models import Sequential, load_model
-from keras.layers import  Dense, Conv3D, Dropout, Flatten, BatchNormalization 
-from keras.callbacks import EarlyStopping, ModelCheckpoint
+from tensorflow.keras.models import Sequential, load_model
+from tensorflow.keras.layers import  Dense, Conv3D, Dropout, Flatten, BatchNormalization 
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from weights_extractor import SaveCompressedWeightsNetwork
 from custom_model import createModel
 from random import shuffle
 import pickle
 import math
+import shutil
+import argparse
 #to plot the model
 #from keras.utils.vis_utils import plot_model
 #from keras.models import load_model
 # Returns a compiled model identical to the saved one
 #model = load_model('my_model.h5')
 
-PathSpectogramFolder=''
-OutputPath=''
-WeightsOutputPath=''
-OutputPathModels=''
+parser = argparse.ArgumentParser()
+parser.add_argument('--resume',action='store_true',default=False)
+args = parser.parse_args()
+
+PathSpectogramFolder='gdrive/MyDrive/CNNs-on-CHB-MIT/spectrograms'
+OutputPath='gdrive/MyDrive/CNNs-on-CHB-MIT/results/nucci/results.txt'
+WeightsOutputPath='gdrive/MyDrive/CNNs-on-CHB-MIT/weights/nucci'
+OutputPathModels='gdrive/MyDrive/CNNs-on-CHB-MIT/results/nucci/model/'
 interictalSpectograms=[]
 preictalSpectograms=[]  #This array contains syntetic data, it's created to have a balance dataset and it's used for training
 preictalRealSpectograms=[]  #This array containt the real preictal data, it's used for testing
@@ -193,51 +199,71 @@ def main():
         os.makedirs(OutputPathModels)
     loadParametersFromFile("PARAMETERS_CNN.txt")
     #callback=EarlyStopping(monitor='val_acc', min_delta=0, patience=0, verbose=0, mode='auto', baseline=None)
-    earlystop=EarlyStoppingByLossVal(monitor='val_accuracy', value=0.975, verbose=1, lower=False)
+
+    # custom early stop is incompatible with keras-buoy, but built-in early stop does not work for this project, falling back to custom early stop with val_acc
+    earlystop=EarlyStoppingByLossVal(monitor='val_acc', value=0.975, verbose=1, lower=False)
     
-    if not os.path.exists(OutputPathModels+'/checkpoints'): # create checkpoints dir if it does not exist
-        os.makedirs(OutputPathModels+'/checkpoints')
-    
-    # create the model and make it resumable
-    model = createModel()
-    resumable_model = ResumableModel(model,save_every_epochs=1,to_path=f'{OutputPathModels}/checkpoints/model_checkpoint_.h5')
+    #earlystop = EarlyStopping(monitor='val_acc',min_delta=0,baseline=0.975,restore_best_weights=False,patience=0,mode='max',verbose=1)
         
     # no need for modelcheckpoint callback
     # modelcheckpoint = ModelCheckpoint(f'{OutputPathModels}/checkpoints/checkpoint_.h5',monitor='val_accuracy',verbose=1,save_best_only=False,save_weights_only=False)
     print("Parameters loaded")
     
-    for indexPat in range(0, len(patients)):
+    if os.path.exists(f'{OutputPathModels}/resume_indices.txt'):
+        with open(f'{OutputPathModels}/resume_indices.txt','r') as resf:
+            resind = resf.readline()
+            indPat = int(resind.split('.')[0])
+            indi = int(resind.split('.')[1])
+    else:
+        indPat = 0
+        indi = 0
+
+    for indexPat in range(indPat, len(patients)):
         print('Patient '+patients[indexPat])
         if not os.path.exists(OutputPathModels+"ModelPat"+patients[indexPat]+"/"):
             os.makedirs(OutputPathModels+"ModelPat"+patients[indexPat]+"/")
+            os.makedirs(OutputPathModels+"ModelPat"+patients[indexPat]+"/checkpoints/")
+        else:
+            if not args.resume:
+                print('You said to not resume, deleting checkpoints...')
+                # This will delete the pkl, h5 and txt file used to store checkpoints
+                if os.listdir(OutputPathModels+"ModelPat"+patients[indexPat]+"/checkpoints/"):
+                    os.remove(os.path.join(OutputPathModels,'resume_indices.txt'))
+                    for f in os.listdir(OutputPathModels+"ModelPat"+patients[indexPat]+"/checkpoints/"):
+                        os.remove(os.path.join(OutputPathModels+"ModelPat"+patients[indexPat]+"/checkpoints/",f))
         
         loadSpectogramData(indexPat) 
         print('Spectograms data loaded')
         
         result='Patient '+patients[indexPat]+'\n'     
         result='Out Seizure, True Positive, False Positive, False negative, Second of Inter in Test, Sensitivity, FPR \n'
-        for i in range(0, nSeizure):
+        for i in range(indi, nSeizure):
             print('SEIZURE OUT: '+str(i+1))
+            with open(f'{OutputPathModels}/resume_indices.txt','w') as resf:
+              resf.write(f'{indexPat}.{i}')
+            # create the model and make it resumable
+            model = createModel()
+            resumable_model = ResumableModel(model,save_every_epochs=1,to_path=f'{OutputPathModels}ModelPat{patients[indexPat]}/checkpoints/model_checkpoint_s{i}.h5')
             
             # Define output dir for weights based on patient and seizure
             finalWeightsOutputPath=WeightsOutputPath+f'/paz{indexPat+1}/seizure{i+1}'
-            weights_callback = SaveCompressedWeightsNetwork(finalWeightsOutputPath)
+            weights_callback = SaveCompressedWeightsNetwork(finalWeightsOutputPath,resume=args.resume)
 
             print('Training start')  
             filesPath=getFilesPathWithoutSeizure(i, indexPat)
             
-            history = resumable_model.fit_generator(generate_arrays_for_training(indexPat, filesPath, end=75), #end=75),#It take the first 75%
+            history = resumable_model.fit(generate_arrays_for_training(indexPat, filesPath, end=75), #end=75),#It take the first 75%
                                 validation_data=generate_arrays_for_training(indexPat, filesPath, start=75),#start=75), #It take the last 25%
                                 #steps_per_epoch=10000, epochs=10)
                                 steps_per_epoch=int((len(filesPath)-int(len(filesPath)/100*25))),#*25), 
                                 validation_steps=int((len(filesPath)-int(len(filesPath)/100*75))),#*75),
-                                verbose=1, #progress bar
+                                verbose=2, #no progress bar -> faster
                                 epochs=300, max_queue_size=2, shuffle=True, callbacks=[earlystop,weights_callback])# 100 epochs è meglio #aggiungere criterio di stop in base accuratezza
             print('Training end')
-            
+
             # Save model history
             with open(f'{finalWeightsOutputPath}_hist.pkl','wb') as h:
-                pickle.dump(history.history,h)
+                pickle.dump(history,h)
 
             print('Testing start')
             filesPath=interictalSpectograms[i]
@@ -301,6 +327,7 @@ def main():
             result=result+str(sensitivity)+','+str(FPR)+'\n'
             print('True Positive, False Positive, False negative, Second of Inter in Test, Sensitivity, FPR')
             print(str(tp)+','+str(fp)+','+str(fn)+','+str(secondsInterictalInTest)+','+str(sensitivity)+','+str(FPR))
+
         with open(OutputPath, "a+") as myfile:
             myfile.write(result)
     
