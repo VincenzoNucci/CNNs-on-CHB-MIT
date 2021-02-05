@@ -250,8 +250,10 @@ def main():
             if args.save_weights:
                 # Define output dir for weights based on patient and seizure
                 weights_callback = SaveCompressedWeightsNetwork(finalWeightsOutputPath,resume=args.resume)
+                print('You asked to save weights, adding callback...')
                 callback = [earlystop,weights_callback]
             else:
+                print('Defaulting callback to earlystop...')
                 callback = [earlystop]
             print('Training start')  
             filesPath=getFilesPathWithoutSeizure(i, indexPat)
