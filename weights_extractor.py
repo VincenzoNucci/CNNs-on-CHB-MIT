@@ -32,7 +32,7 @@ class SaveCompressedWeightsNetwork(tf.keras.callbacks.Callback):
     init_path = f'{os.path.join(self.output_dir,str.zfill(str(0),len(str(self.epochs))+1))}.pkl'
     if not os.path.exists(init_path):
         pickle.dump(self.initial,open(init_path,'wb'))
-
+        
   def on_train_batch_end(self, batch, logs=None):
     # Saves all layers' weights at the end of each batch
     for n in range(len(self.model.layers)):
@@ -41,10 +41,6 @@ class SaveCompressedWeightsNetwork(tf.keras.callbacks.Callback):
   
   def on_epoch_end(self, epoch, logs=None):
     # Saves weights splitting per epochs. The first epoch will contain weights initialization at first position
-    if epoch == 0: # Put weight initialization as first element in weights layer
-      for n in range(len(self.model.layers)):
-        if len(self.initial[n])>0:
-          self.weights_layer[n].insert(0,self.initial[n][0])
     save_fname = str.zfill(str(epoch+1),len(str(self.epochs))+1)
     
     pickle.dump(self.weights_layer,open(f'{os.path.join(self.output_dir,save_fname)}.pkl','wb'))
