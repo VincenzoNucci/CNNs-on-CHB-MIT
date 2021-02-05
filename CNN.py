@@ -27,7 +27,6 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--resume',action='store_true',default=False)
-parser.add_argument('--save-weights',action='store_true',default=False)
 args = parser.parse_args()
 
 PathSpectogramFolder='gdrive/MyDrive/CNNs-on-CHB-MIT/spectrograms'
@@ -247,12 +246,9 @@ def main():
             resumable_model = ResumableModel(model,save_every_epochs=1,to_path=f'{OutputPathModels}ModelPat{patients[indexPat]}/checkpoints/model_checkpoint_s{i}.h5')
             
             # Define output dir for weights based on patient and seizure
-            if args.save_weights:
-                finalWeightsOutputPath=WeightsOutputPath+f'/paz{indexPat+1}/seizure{i+1}'
-                weights_callback = SaveCompressedWeightsNetwork(finalWeightsOutputPath,resume=args.resume)
-                callback = [earlystop,weights_callback]
-            else:
-                callback = [earlystop]
+            finalWeightsOutputPath=WeightsOutputPath+f'/paz{indexPat+1}/seizure{i+1}'
+            weights_callback = SaveCompressedWeightsNetwork(finalWeightsOutputPath,resume=args.resume)
+
             print('Training start')  
             filesPath=getFilesPathWithoutSeizure(i, indexPat)
             
@@ -261,8 +257,8 @@ def main():
                                 #steps_per_epoch=10000, epochs=10)
                                 steps_per_epoch=int((len(filesPath)-int(len(filesPath)/100*25))),#*25), 
                                 validation_steps=int((len(filesPath)-int(len(filesPath)/100*75))),#*75),
-                                verbose=1, #progress bar
-                                epochs=300, max_queue_size=2, shuffle=True, callbacks=callback)# 100 epochs è meglio #aggiungere criterio di stop in base accuratezza
+                                verbose=1, #no progress bar -> faster
+                                epochs=300, max_queue_size=2, shuffle=True, callbacks=[earlystop,weights_callback])# 100 epochs è meglio #aggiungere criterio di stop in base accuratezza
             print('Training end')
 
             # Save model history
