@@ -29,7 +29,9 @@ class SaveCompressedWeightsNetwork(tf.keras.callbacks.Callback):
       # Exclude layers which does not have weights (Dropout, Flatten, MaxPool...)
       if self.model.layers[n].name.find('conv') >=0 or self.model.layers[n].name.find('dense')>=0:
         self.initial[n].append(self.model.layers[n].get_weights()[0])
-    pickle.dump(self.initial,open(f'{os.path.join(self.output_dir,str.zfill(str(0),len(str(self.epochs))+1))}.pkl','wb'))
+    init_path = f'{os.path.join(self.output_dir,str.zfill(str(0),len(str(self.epochs))+1))}.pkl'
+    if not os.path.exists(init_path):
+        pickle.dump(self.initial,open(init_path,'wb'))
 
   def on_train_batch_end(self, batch, logs=None):
     # Saves all layers' weights at the end of each batch
