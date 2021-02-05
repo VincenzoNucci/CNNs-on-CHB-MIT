@@ -8,7 +8,7 @@ df = 'channels_last' # if using cpu
 # df = 'channels_first' # if using gpu (remember to remove the transpose in the data generators)
 
 def createModel():
-    input_shape=(1, 22, 59, 114)
+    input_shape=(22, 59, 114, 1)
     model = Sequential()
     #C1
     model.add(Conv3D(16, (22, 5, 5), strides=(1, 2, 2), padding='valid',activation='relu',data_format= df, input_shape=input_shape))
