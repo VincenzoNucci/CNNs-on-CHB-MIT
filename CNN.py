@@ -334,6 +334,7 @@ def main():
             print('True Positive, False Positive, False negative, Second of Inter in Test, Sensitivity, FPR')
             print(str(tp)+','+str(fp)+','+str(fn)+','+str(secondsInterictalInTest)+','+str(sensitivity)+','+str(FPR))
 
+        indi = 0
         with open(OutputPath, "a+") as myfile:
             myfile.write(result)
     
