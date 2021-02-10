@@ -30,10 +30,10 @@ parser.add_argument('--resume',action='store_true',default=False)
 parser.add_argument('--save-weights',action='store_true',default=False)
 args = parser.parse_args()
 
-PathSpectogramFolder='gdrive/MyDrive/CNNs-on-CHB-MIT/spectrograms'
-OutputPath='gdrive/MyDrive/CNNs-on-CHB-MIT/results/nucci/results.txt'
-WeightsOutputPath='gdrive/MyDrive/CNNs-on-CHB-MIT/weights/nucci'
-OutputPathModels='gdrive/MyDrive/CNNs-on-CHB-MIT/results/nucci/model/'
+PathSpectogramFolder=''
+OutputPath=''
+WeightsOutputPath=''
+OutputPathModels=''
 interictalSpectograms=[]
 preictalSpectograms=[]  #This array contains syntetic data, it's created to have a balance dataset and it's used for training
 preictalRealSpectograms=[]  #This array containt the real preictal data, it's used for testing
