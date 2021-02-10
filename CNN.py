@@ -154,13 +154,14 @@ def generate_arrays_for_training(indexPat, paths, start=0, end=100):
         for i in range(from_, int(to_)):
             f=paths[i]
             x = np.load(PathSpectogramFolder+f)
-            x=np.array([x])
-            x=x.swapaxes(0,1)
+            #x=np.array([x])
+            #x=x.swapaxes(0,1)
+            x=np.expand_dims(x,-1)
             if('P' in f):
                 y = np.repeat([[0,1]],x.shape[0], axis=0)
             else:
                 y =np.repeat([[1,0]],x.shape[0], axis=0)
-            yield(x.transpose(0,2,3,4,1),y)
+            yield((x*255).astype('uint8'),y)
             
 def generate_arrays_for_predict(indexPat, paths, start=0, end=100):
     while True:
@@ -169,9 +170,10 @@ def generate_arrays_for_predict(indexPat, paths, start=0, end=100):
         for i in range(from_, int(to_)):
             f=paths[i]
             x = np.load(PathSpectogramFolder+f)
-            x=np.array([x])
-            x=x.swapaxes(0,1)
-            yield(x.transpose(0,2,3,4,1))
+            #x=np.array([x])
+            #x=x.swapaxes(0,1)
+            x=np.expand_dims(x,-1)
+            yield((x*255).astype('uint8'))
 
 class EarlyStoppingByLossVal(keras.callbacks.Callback):
     def __init__(self, monitor='val_loss', value=0.00001, verbose=0, lower=True):
@@ -202,7 +204,7 @@ def main():
     #callback=EarlyStopping(monitor='val_acc', min_delta=0, patience=0, verbose=0, mode='auto', baseline=None)
 
     # custom early stop is incompatible with keras-buoy, but built-in early stop does not work for this project, falling back to custom early stop with val_acc
-    earlystop=EarlyStoppingByLossVal(monitor='val_acc', value=0.975, verbose=1, lower=False)
+    earlystop=EarlyStoppingByLossVal(monitor='val_accuracy', value=0.975, verbose=1, lower=False)
     
     #earlystop = EarlyStopping(monitor='val_acc',min_delta=0,baseline=0.975,restore_best_weights=False,patience=0,mode='max',verbose=1)
         
