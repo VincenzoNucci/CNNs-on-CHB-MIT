@@ -146,6 +146,13 @@ def getFilesPathWithoutSeizure(indexSeizure, indexPat):
     shuffle(filesPath)
     return filesPath
 
+def getFilesPath(indexPat):
+    filesPath=[]
+    for i in range(0, nSeizure):
+        filesPath.extend(interictalSpectograms[i])
+        filesPath.extend(preictalSpectograms[i])
+    shuffle(filesPath)
+    return filesPath
 
 def generate_arrays_for_training(indexPat, paths, start=0, end=100):
     while True:
@@ -258,8 +265,8 @@ def main():
                 print('Defaulting callback to earlystop...')
                 callback = [earlystop]
             print('Training start')  
-            filesPath=getFilesPathWithoutSeizure(i, indexPat)
-            
+            #filesPath=getFilesPathWithoutSeizure(i, indexPat)
+            filesPath=getFilesPath(indexPat)
             history = resumable_model.fit(generate_arrays_for_training(indexPat, filesPath, end=75), #end=75),#It take the first 75%
                                 validation_data=generate_arrays_for_training(indexPat, filesPath, start=75),#start=75), #It take the last 25%
                                 #steps_per_epoch=10000, epochs=10)
