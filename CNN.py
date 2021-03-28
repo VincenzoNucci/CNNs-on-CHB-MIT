@@ -173,8 +173,8 @@ def generate_arrays_for_training(indexPat, paths, start=0, end=100):
             y = np.repeat([[0,1]],x.shape[0], axis=0)
         else:
             y =np.repeat([[1,0]],x.shape[0], axis=0)
-        X.extends(x)
-        Y.extends(y)
+        X.extend(x)
+        Y.extend(y)
     return X,Y
             
 def generate_arrays_for_predict(indexPat, paths, start=0, end=100):
@@ -188,7 +188,7 @@ def generate_arrays_for_predict(indexPat, paths, start=0, end=100):
             x=x.swapaxes(0,1)
             #VN-aggiunta
             #x=np.expand_dims(x,-1)
-            X.extends(x)
+            X.extend(x)
         return X
 
 class EarlyStoppingByLossVal(keras.callbacks.Callback):
