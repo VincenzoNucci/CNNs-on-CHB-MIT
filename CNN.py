@@ -273,7 +273,7 @@ def main():
             
             model = KerasClassifier(build_fn=createModel,shuffle=True,callbacks=callback)
             params_grid = dict(
-                validation_data:generate_arrays_for_training(indexPat, filesPath, start=75),
+                validation_data=generate_arrays_for_training(indexPat, filesPath, start=75),
                 steps_per_epoch=int((len(filesPath)-int(len(filesPath)/100*25))),
                 validation_steps=int((len(filesPath)-int(len(filesPath)/100*75))),
                 verbose=1,
