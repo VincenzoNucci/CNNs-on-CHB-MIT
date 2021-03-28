@@ -147,19 +147,9 @@ def getFilesPathWithoutSeizure(indexSeizure, indexPat):
     shuffle(filesPath)
     return filesPath
 
-def getFilesPath(indexPat):
-    filesPath=[]
-    for i in range(0, nSeizure):
-        filesPath.extend(interictalSpectograms[i])
-        filesPath.extend(preictalSpectograms[i])
-    shuffle(filesPath)
-    return filesPath
-
 def generate_arrays_for_training(indexPat, paths, start=0, end=100):
     from_=int(len(paths)/100*start)
     to_=int(len(paths)/100*end)
-    X = []
-    Y = []
     for i in range(from_, int(to_)):
         f=paths[i]
         x = np.load(PathSpectogramFolder+f)
@@ -171,15 +161,11 @@ def generate_arrays_for_training(indexPat, paths, start=0, end=100):
             y = np.repeat([[0,1]],x.shape[0], axis=0)
         else:
             y =np.repeat([[1,0]],x.shape[0], axis=0)
-        # yield(x,y)
-        X.append(x)
-        Y.append(y)
-    return X, Y
+        yield(x,y)
             
 def generate_arrays_for_predict(indexPat, paths, start=0, end=100):
         from_=int(len(paths)/100*start)
         to_=int(len(paths)/100*end)
-        X = []
         for i in range(from_, int(to_)):
             f=paths[i]
             x = np.load(PathSpectogramFolder+f)
@@ -187,9 +173,7 @@ def generate_arrays_for_predict(indexPat, paths, start=0, end=100):
             x=x.swapaxes(0,1)
             #VN-aggiunta
             #x=np.expand_dims(x,-1)
-            #yield(x)
-            X.append(x)
-        return X
+            yield(x)
 
 class EarlyStoppingByLossVal(keras.callbacks.Callback):
     def __init__(self, monitor='val_loss', value=0.00001, verbose=0, lower=True):
@@ -254,14 +238,9 @@ def main():
         loadSpectogramData(indexPat) 
         print('Spectograms data loaded')
         
-        filesPath=getFilesPath(indexPat)
-        X,y = generate_arrays_for_training(indexPat, filesPath, start=0, end=100)
-        loo = LeaveOneOut()
-        print('loo splits:',loo.get_n_splits(X))
-        
         result='Patient '+patients[indexPat]+'\n'     
         result='Out Seizure, True Positive, False Positive, False negative, Second of Inter in Test, Sensitivity, FPR \n'
-        for train_idx, test_idx in loo.split(X):
+        for i in range(indi, nSeizure):
             print('SEIZURE OUT: '+str(i+1))
             with open(f'{OutputPathModels}/resume_indices.txt','w') as resf:
               resf.write(f'{indexPat}.{i}')
@@ -278,14 +257,14 @@ def main():
             else:
                 print('Defaulting callback to earlystop...')
                 callback = [earlystop]
-            print('Training start')  
-            #filesPath=getFilesPathWithoutSeizure(i, indexPat)
+            print('Training start')
             
-            history = resumable_model.fit(X[train_idx],y[train_idx], #end=75),#It take the first 75%
-                                validation_data=(X[test_idx],y[test_idx]),#start=75), #It take the last 25%
+            filesPath=getFilesPathWithoutSeizure(i, indexPat)
+            history = resumable_model.fit(generate_arrays_for_training(indexPat, filesPath, end=75), #end=75),#It take the first 75%
+                                validation_data=generate_arrays_for_training(indexPat, filesPath, start=75),#start=75), #It take the last 25%
                                 #steps_per_epoch=10000, epochs=10)
-                                steps_per_epoch=len(X[train_idx]),#*25), 
-                                validation_steps=len(X[test_idx]),#*75),
+                                steps_per_epoch=int((len(filesPath)-int(len(filesPath)/100*25))),#*25), 
+                                validation_steps=int((len(filesPath)-int(len(filesPath)/100*75))),#*75),
                                 verbose=1, #no progress bar -> faster
                                 epochs=300, max_queue_size=2, shuffle=True, callbacks=callback)# 100 epochs è meglio #aggiungere criterio di stop in base accuratezza
             print('Training end')
