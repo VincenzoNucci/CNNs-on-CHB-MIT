@@ -173,9 +173,7 @@ def generate_arrays_for_training(indexPat, paths, start=0, end=100):
             y = np.repeat([[0,1]],x.shape[0], axis=0)
         else:
             y =np.repeat([[1,0]],x.shape[0], axis=0)
-        X.extend(x)
-        Y.extend(y)
-    return X,Y
+        yield(x,y)
             
 def generate_arrays_for_predict(indexPat, paths, start=0, end=100):
         from_=int(len(paths)/100*start)
@@ -188,8 +186,7 @@ def generate_arrays_for_predict(indexPat, paths, start=0, end=100):
             x=x.swapaxes(0,1)
             #VN-aggiunta
             #x=np.expand_dims(x,-1)
-            X.extend(x)
-        return X
+            yield(x)
 
 class EarlyStoppingByLossVal(keras.callbacks.Callback):
     def __init__(self, monitor='val_loss', value=0.00001, verbose=0, lower=True):
@@ -277,11 +274,12 @@ def main():
                 callback = [earlystop]
             print('Training start')
             
-            model = KerasClassifier(build_fn=createModel,shuffle=True,callbacks=callback)
-            params_grid = dict(
-                validation_data=generate_arrays_for_training(indexPat, filesPath, start=75),
+            model = KerasClassifier(build_fn=createModel,shuffle=True,callbacks=callback,validation_data=generate_arrays_for_training(indexPat, filesPath, start=75),
                 steps_per_epoch=int((len(filesPath)-int(len(filesPath)/100*25))),
-                validation_steps=int((len(filesPath)-int(len(filesPath)/100*75))),
+                validation_steps=int((len(filesPath)-int(len(filesPath)/100*75)))
+            )
+            params_grid = dict(
+                
                 verbose=1,
                 epochs=300, 
                 max_queue_size=2
