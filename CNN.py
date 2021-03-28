@@ -9,10 +9,11 @@ import os
 from tensorflow import keras
 from keras_buoy.models import ResumableModel
 import numpy as np
-from sklearn.model_selection import LeaveOneOut
+from sklearn.model_selection import LeaveOneOut, LeaveOneGroupOut, GridSearchCV
 from tensorflow.keras.models import Sequential, load_model
 from tensorflow.keras.layers import  Dense, Conv3D, Dropout, Flatten, BatchNormalization 
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+from keras.wrappers.scikit_learn import KerasClassifier
 from weights_extractor import SaveCompressedWeightsNetwork
 from custom_model import createModel
 from random import shuffle
@@ -147,6 +148,15 @@ def getFilesPathWithoutSeizure(indexSeizure, indexPat):
     shuffle(filesPath)
     return filesPath
 
+def getFilesPathWithGroup(indexPat):
+    filesPath=[]
+    groups=[]
+    for i in range(0, nSeizure):
+        filesPath.extend(interictalSpectograms[i])
+        filesPath.extend(preictalSpectograms[i])
+        groups.extend([i for _ in range(len(filesPath))])
+    return filesPath,groups
+
 def generate_arrays_for_training(indexPat, paths, start=0, end=100):
     from_=int(len(paths)/100*start)
     to_=int(len(paths)/100*end)
@@ -237,6 +247,8 @@ def main():
         
         loadSpectogramData(indexPat) 
         print('Spectograms data loaded')
+        filesPath,groups=getFilesPathWithGroup(indexPat)
+        logo = LeaveOneGroupOut()
         
         result='Patient '+patients[indexPat]+'\n'     
         result='Out Seizure, True Positive, False Positive, False negative, Second of Inter in Test, Sensitivity, FPR \n'
@@ -259,7 +271,21 @@ def main():
                 callback = [earlystop]
             print('Training start')
             
-            filesPath=getFilesPathWithoutSeizure(i, indexPat)
+            model = KerasClassifier(build_fn=createModel,shuffle=True,callbacks=callback)
+            params_grid = dict(
+                validation_data:generate_arrays_for_training(indexPat, filesPath, start=75),
+                steps_per_epoch=int((len(filesPath)-int(len(filesPath)/100*25))),
+                validation_steps=int((len(filesPath)-int(len(filesPath)/100*75))),
+                verbose=1,
+                epochs=300, 
+                max_queue_size=2
+            )
+            search = GridSearchCV(model,params_grid,n_jobs=-1,cv=logo,verbose=4,refit=True)
+            search.fit(generate_arrays_for_training(indexPat, filesPath, end=75),groups=groups)
+            print('number of total CV splits:', search.n_splits_)
+            print('best estimator:',search.best_estimator_)
+            print('best score:',search.best_score_)
+            
             history = resumable_model.fit(generate_arrays_for_training(indexPat, filesPath, end=75), #end=75),#It take the first 75%
                                 validation_data=generate_arrays_for_training(indexPat, filesPath, start=75),#start=75), #It take the last 25%
                                 #steps_per_epoch=10000, epochs=10)
