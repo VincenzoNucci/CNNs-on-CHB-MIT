@@ -280,9 +280,9 @@ def main():
             )
             params_grid = dict(
                 
-                verbose=1,
-                epochs=300, 
-                max_queue_size=2
+                verbose=[1],
+                epochs=[300], 
+                max_queue_size=[2]
             )
             search = GridSearchCV(model,params_grid,n_jobs=-1,cv=logo,verbose=4,refit=True)
             search.fit(generate_arrays_for_training(indexPat, filesPath, end=75),groups=groups)
