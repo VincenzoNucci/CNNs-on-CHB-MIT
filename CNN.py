@@ -289,7 +289,7 @@ def main():
             )
             Xtrain,ytrain = generate_arrays_for_training(indexPat, filesPath, end=75)
             search = GridSearchCV(model,params_grid,n_jobs=-1,cv=logo,verbose=4,refit=True)
-            search.fit(Xtrain,ytrain,groups=groups[0:int(len(filesPath)/100*75)])
+            search.fit(Xtrain,ytrain,groups=groups[0:len(Xtrain)])
             print('number of total CV splits:', search.n_splits_)
             print('best estimator:',search.best_estimator_)
             print('best score:',search.best_score_)
