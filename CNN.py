@@ -175,7 +175,9 @@ def generate_arrays_for_training(indexPat, paths, start=0, end=100):
             y = np.repeat([[0,1]],x.shape[0], axis=0)
         else:
             y =np.repeat([[1,0]],x.shape[0], axis=0)
-        yield(x.transpose(0,2,3,4,1),y)
+        X.extend(x.transpose(0,2,3,4,1))
+        Y.extend(y)
+    return X,Y
             
 def generate_arrays_for_predict(indexPat, paths, start=0, end=100):
         from_=int(len(paths)/100*start)
@@ -188,7 +190,8 @@ def generate_arrays_for_predict(indexPat, paths, start=0, end=100):
             x=x.swapaxes(0,1)
             #VN-aggiunta
             #x=np.expand_dims(x,-1)
-            yield(x.transpose(0,2,3,4,1))
+            X.extend(x.transpose(0,2,3,4,1))
+        return X
 
 class EarlyStoppingByLossVal(keras.callbacks.Callback):
     def __init__(self, monitor='val_loss', value=0.00001, verbose=0, lower=True):
@@ -220,9 +223,9 @@ def main():
     #callback=EarlyStopping(monitor='val_acc', min_delta=0, patience=0, verbose=0, mode='auto', baseline=None)
 
     # custom early stop is incompatible with keras-buoy, but built-in early stop does not work for this project, falling back to custom early stop with val_acc
-    #earlystop=EarlyStoppingByLossVal(monitor='val_acc', value=0.975, verbose=1, lower=False)
+    earlystop=EarlyStoppingByLossVal(monitor='val_acc', value=0.975, verbose=1, lower=False)
     
-    earlystop = EarlyStopping(monitor='val_acc',min_delta=0,baseline=0.975,restore_best_weights=False,patience=0,mode='max',verbose=1)
+    #earlystop = EarlyStopping(monitor='val_acc',min_delta=0,baseline=0.975,restore_best_weights=False,patience=0,mode='max',verbose=1)
         
     # no need for modelcheckpoint callback
     # modelcheckpoint = ModelCheckpoint(f'{OutputPathModels}/checkpoints/checkpoint_.h5',monitor='val_accuracy',verbose=1,save_best_only=False,save_weights_only=False)
@@ -297,10 +300,10 @@ def main():
             print('best estimator:',search.best_estimator_)
             print('best score:',search.best_score_)
             '''
-            #Xtrain,ytrain = generate_arrays_for_training(indexPat, filesPath, end=75)
+            Xtrain,ytrain = generate_arrays_for_training(indexPat, filesPath)
             #Xval,yval = generate_arrays_for_training(indexPat, filesPath, start=75)
-            history = resumable_model.fit(generate_arrays_for_training(indexPat, filesPath, end=75), #end=75),#It take the first 75%
-                                validation_data=generate_arrays_for_training(indexPat, filesPath, start=75),#start=75), #It take the last 25%
+            history = resumable_model.fit(Xtrain,ytrain, #end=75),#It take the first 75%
+                                validation_split=0.25,#start=75), #It take the last 25%
                                 #steps_per_epoch=10000, epochs=10)
                                 steps_per_epoch=int((len(filesPath)-int(len(filesPath)/100*25))),#*25), 
                                 validation_steps=int((len(filesPath)-int(len(filesPath)/100*75))),#*75),
