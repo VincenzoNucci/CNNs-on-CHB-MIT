@@ -199,6 +199,7 @@ class EarlyStoppingByLossVal(keras.callbacks.Callback):
         self.lower=lower
 
     def on_epoch_end(self, epoch, logs={}):
+        print(logs)
         current = logs.get(self.monitor)
         if self.lower:
             if current < self.value:
