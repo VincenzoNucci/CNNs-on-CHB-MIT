@@ -176,7 +176,7 @@ def generate_arrays_for_training(indexPat, paths, start=0, end=100):
         else:
             y =np.repeat([[1,0]],x.shape[0], axis=0)
         X.append(x.transpose(0,2,3,4,1))
-        Y.append(y)
+        Y.extend(y)
     return X,Y
             
 def generate_arrays_for_predict(indexPat, paths, start=0, end=100):
