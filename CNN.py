@@ -258,7 +258,8 @@ def main():
         
         result='Patient '+patients[indexPat]+'\n'     
         result='Out Seizure, True Positive, False Positive, False negative, Second of Inter in Test, Sensitivity, FPR \n'
-        for i in range(indi, nSeizure):
+        #for i in range(indi, nSeizure):
+        for i in range(0,1):
             print('SEIZURE OUT: '+str(i+1))
             with open(f'{OutputPathModels}/resume_indices.txt','w') as resf:
               resf.write(f'{indexPat}.{i}')
@@ -277,6 +278,8 @@ def main():
                 callback = [earlystop]
             print('Training start')
             
+            # Cross-validation sklearn
+            '''
             model = KerasClassifier(build_fn=createModel,shuffle=True,callbacks=callback,validation_data=generate_arrays_for_training(indexPat, filesPath, start=75),
                 steps_per_epoch=int((len(filesPath)-int(len(filesPath)/100*25))),
                 validation_steps=int((len(filesPath)-int(len(filesPath)/100*75)))
@@ -293,9 +296,11 @@ def main():
             print('number of total CV splits:', search.n_splits_)
             print('best estimator:',search.best_estimator_)
             print('best score:',search.best_score_)
-            
-            history = resumable_model.fit(generate_arrays_for_training(indexPat, filesPath, end=75), #end=75),#It take the first 75%
-                                validation_data=generate_arrays_for_training(indexPat, filesPath, start=75),#start=75), #It take the last 25%
+            '''
+            Xtrain,ytrain = generate_arrays_for_training(indexPat, filesPath, end=75)
+            Xval,yval = generate_arrays_for_training(indexPat, filesPath, start=75)
+            history = resumable_model.fit(Xtrain,ytrain, #end=75),#It take the first 75%
+                                validation_data=(Xval,yval),#start=75), #It take the last 25%
                                 #steps_per_epoch=10000, epochs=10)
                                 steps_per_epoch=int((len(filesPath)-int(len(filesPath)/100*25))),#*25), 
                                 validation_steps=int((len(filesPath)-int(len(filesPath)/100*75))),#*75),
@@ -309,9 +314,11 @@ def main():
 
             print('Testing start')
             filesPath=interictalSpectograms[i]
-            interPrediction=resumable_model.predict(generate_arrays_for_predict(indexPat,filesPath), max_queue_size=4, steps=len(filesPath))
+            Xtest,ytest = generate_arrays_for_predict(indexPat,filesPath)
+            interPrediction=resumable_model.predict(Xtest,ytest, max_queue_size=4, steps=len(filesPath))
             filesPath=preictalRealSpectograms[i]
-            preictPrediction=resumable_model.predict(generate_arrays_for_predict(indexPat,filesPath), max_queue_size=4, steps=len(filesPath))
+            Xtest,ytest = generate_arrays_for_predict(indexPat,filesPath)
+            preictPrediction=resumable_model.predict(Xtest,ytest, max_queue_size=4, steps=len(filesPath))
             print('Testing end')
             
 
